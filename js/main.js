@@ -47,7 +47,7 @@ function getColor(count) {
   return "#0d1f3c";
 }
 
-let map, geojsonLayer, currentFilter = "all";
+let map, geojsonLayer, labelsLayer, currentFilter = "all";
 let selectedLayer = null;
 
 // ── Initialize map ────────────────────────────────────────
@@ -60,15 +60,18 @@ function initMap() {
     zoomControl: true
   });
 
-  // Tile layer — OpenStreetMap
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
+  // Clean light basemap (less visual noise than OSM)
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png", {
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors © <a href="https://carto.com">CARTO</a>',
     maxZoom: 18
   }).addTo(map);
 
   // Load GeoJSON
   loadGeoJSON();
   buildOrgFilter();
+
+  // Re-draw labels on zoom
+  map.on("zoomend", updateLabels);
 }
 
 // ── Load Nepal district boundaries ───────────────────────
@@ -79,12 +82,20 @@ function loadGeoJSON() {
       return r.json();
     })
     .then(data => {
+      window._nepalGeoJSON = data;
       geojsonLayer = L.geoJSON(data, {
         style: featureStyle,
         onEachFeature: onEachFeature
       }).addTo(map);
 
       map.fitBounds(geojsonLayer.getBounds(), { padding: [10, 10] });
+
+      // Add dim overlay outside Nepal using SVG mask
+      addNepalMask(data);
+
+      // Add district labels
+      labelsLayer = L.layerGroup().addTo(map);
+      addDistrictLabels(data);
     })
     .catch(err => {
       console.error("GeoJSON load error:", err);
@@ -309,6 +320,99 @@ function normalizeDistrictName(raw) {
   if (NAME_OVERRIDES[upper]) return NAME_OVERRIDES[upper];
   // Fallback: title-case (handles any unexpected names)
   return raw.trim().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// ── Nepal mask: dims everything outside Nepal ────────────
+function addNepalMask(geojsonData) {
+  // Big bounding rectangle covering the whole world
+  const world = [[-90, -180], [-90, 180], [90, 180], [90, -180], [-90, -180]];
+
+  // Collect all Nepal coordinates as holes in the rectangle
+  // We use a single large polygon with Nepal cut out as a hole
+  const nepalCoords = [];
+  geojsonData.features.forEach(f => {
+    const geom = f.geometry;
+    const polys = geom.type === "Polygon" ? [geom.coordinates]
+                : geom.type === "MultiPolygon" ? geom.coordinates : [];
+    polys.forEach(poly => {
+      poly.forEach(ring => {
+        nepalCoords.push(ring.map(c => [c[1], c[0]])); // [lon,lat] → [lat,lon]
+      });
+    });
+  });
+
+  // Build a GeoJSON Feature: world rectangle with Nepal holes
+  const maskCoords = [
+    [[-90,-180],[-90,180],[90,180],[90,-180],[-90,-180]], // outer world
+    ...geojsonData.features.flatMap(f => {
+      const g = f.geometry;
+      const polys = g.type === "Polygon" ? [g.coordinates]
+                  : g.type === "MultiPolygon" ? g.coordinates : [];
+      return polys.flatMap(p => p.map(ring => ring.map(c => [c[0], c[1]])));
+    })
+  ];
+
+  L.geoJSON({
+    type: "Feature",
+    geometry: { type: "Polygon", coordinates: maskCoords }
+  }, {
+    style: {
+      fillColor: "#f0f4f8",
+      fillOpacity: 0.72,
+      color: "none",
+      weight: 0,
+      interactive: false
+    }
+  }).addTo(map);
+}
+
+// ── District labels ───────────────────────────────────────
+function addDistrictLabels(geojsonData) {
+  if (!labelsLayer) return;
+  labelsLayer.clearLayers();
+
+  const zoom = map.getZoom();
+  // Only show labels from zoom 7 upward; smaller font at lower zoom
+  if (zoom < 7) return;
+
+  const fontSize = zoom >= 9 ? 11 : zoom >= 8 ? 9 : 8;
+
+  geojsonData.features.forEach(f => {
+    const rawName = f.properties.DISTRICT || f.properties.district || "";
+    const name = normalizeDistrictName(rawName);
+
+    // Get centroid approximation from bounds
+    const layer = L.geoJSON(f);
+    const center = layer.getBounds().getCenter();
+
+    const label = L.marker(center, {
+      icon: L.divIcon({
+        className: "",
+        html: `<div style="
+          font-size:${fontSize}px;
+          font-weight:600;
+          color:#1a3c5e;
+          text-shadow: 1px 1px 2px rgba(255,255,255,0.9), -1px -1px 2px rgba(255,255,255,0.9),
+                       1px -1px 2px rgba(255,255,255,0.9), -1px 1px 2px rgba(255,255,255,0.9);
+          white-space:nowrap;
+          pointer-events:none;
+          user-select:none;
+          text-align:center;
+          transform:translate(-50%,-50%);
+        ">${name}</div>`,
+        iconSize: [0, 0],
+        iconAnchor: [0, 0]
+      }),
+      interactive: false
+    });
+
+    labelsLayer.addLayer(label);
+  });
+}
+
+function updateLabels() {
+  // Re-fetch stored data reference to redraw labels
+  if (window._nepalGeoJSON) addDistrictLabels(window._nepalGeoJSON);
 }
 
 function defaultSidebarHTML() {
