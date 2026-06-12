@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nepal Partner Map</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <div id="header">
+    <div>
+      <h1>🇳🇵 Nepal Partner Organisation Map</h1>
+      <div class="subtitle">Interactive district-level partner coverage</div>
+    </div>
+    <div id="stats-bar">
+      <div class="stat-item">
+        <div class="stat-num" id="stat-districts">—</div>
+        <div>Districts covered</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="stat-orgs">—</div>
+        <div>Partner organisations</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main layout ── -->
+  <div id="app">
+
+    <!-- Map -->
+    <div id="map"></div>
+
+    <!-- Sidebar -->
+    <div id="sidebar">
+      <div id="sidebar-header">
+        <h2>Click a district</h2>
+      </div>
+
+      <!-- Filter -->
+      <div id="filter-bar">
+        <label for="org-filter">Filter by Organisation</label>
+        <select id="org-filter">
+          <option value="all">— Show all —</option>
+        </select>
+      </div>
+
+      <!-- Info content -->
+      <div id="sidebar-content">
+        <div class="empty-state">
+          <div class="icon">🗺️</div>
+          <p>Click on any district to see which partner organisations are working there.</p>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div id="legend">
+        <h3>Partners per district</h3>
+        <div class="legend-items">
+          <div class="legend-item">
+            <div class="legend-color" style="background:#e9ecef;border:1px solid #ccc"></div>
+            <span>No partners</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background:#bee3f8"></div>
+            <span>1 partner</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background:#63b3ed"></div>
+            <span>2–3 partners</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background:#2b6cb0"></div>
+            <span>4–5 partners</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background:#1a365d"></div>
+            <span>6–8 partners</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background:#0d1f3c"></div>
+            <span>9+ partners</span>
+          </div>
+          <div class="legend-item" id="filter-legend" style="display:none">
+            <div class="legend-color" style="background:#e53e3e"></div>
+            <span>Selected organisation active</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Partner data -->
+  <script src="data/partners.js"></script>
+
+  <!-- App logic -->
+  <script src="js/main.js"></script>
+
+  <!-- Show/hide filter legend item -->
+  <script>
+    document.getElementById("org-filter").addEventListener("change", function() {
+      const fl = document.getElementById("filter-legend");
+      fl.style.display = this.value === "all" ? "none" : "flex";
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,261 @@
+// ─────────────────────────────────────────────────────────
+//  Nepal Partner Map — main.js
+//  Requires: Leaflet 1.9+, partners.js (data/partners.js)
+// ─────────────────────────────────────────────────────────
+
+// ── Province mapping (district → province name) ──────────
+const DISTRICT_PROVINCE = {
+  // Province 1 (Koshi)
+  "Taplejung":"Koshi","Panchthar":"Koshi","Ilam":"Koshi","Jhapa":"Koshi",
+  "Morang":"Koshi","Sunsari":"Koshi","Dhankuta":"Koshi","Terhathum":"Koshi",
+  "Sankhuwasabha":"Koshi","Bhojpur":"Koshi","Solukhumbu":"Koshi",
+  "Okhaldhunga":"Koshi","Khotang":"Koshi","Udayapur":"Koshi",
+  // Province 2 (Madhesh)
+  "Saptari":"Madhesh","Siraha":"Madhesh","Dhanusha":"Madhesh","Mahottari":"Madhesh",
+  "Sarlahi":"Madhesh","Rautahat":"Madhesh","Bara":"Madhesh","Parsa":"Madhesh",
+  // Bagmati
+  "Sindhuli":"Bagmati","Ramechhap":"Bagmati","Dolakha":"Bagmati","Sindhupalchok":"Bagmati",
+  "Kavrepalanchok":"Bagmati","Lalitpur":"Bagmati","Bhaktapur":"Bagmati","Kathmandu":"Bagmati",
+  "Nuwakot":"Bagmati","Rasuwa":"Bagmati","Dhading":"Bagmati","Makawanpur":"Bagmati",
+  "Chitwan":"Bagmati",
+  // Gandaki
+  "Gorkha":"Gandaki","Manang":"Gandaki","Mustang":"Gandaki","Myagdi":"Gandaki",
+  "Kaski":"Gandaki","Lamjung":"Gandaki","Tanahu":"Gandaki","Nawalparasi East":"Gandaki",
+  "Syangja":"Gandaki","Parbat":"Gandaki","Baglung":"Gandaki",
+  // Lumbini
+  "Rukum East":"Lumbini","Rolpa":"Lumbini","Pyuthan":"Lumbini","Gulmi":"Lumbini",
+  "Arghakhanchi":"Lumbini","Palpa":"Lumbini","Nawalparasi West":"Lumbini",
+  "Rupandehi":"Lumbini","Kapilbastu":"Lumbini","Dang":"Lumbini","Banke":"Lumbini",
+  "Bardiya":"Lumbini",
+  // Karnali
+  "Dolpa":"Karnali","Mugu":"Karnali","Humla":"Karnali","Jumla":"Karnali",
+  "Kalikot":"Karnali","Dailekh":"Karnali","Jajarkot":"Karnali","Rukum West":"Karnali",
+  "Salyan":"Karnali","Surkhet":"Karnali",
+  // Sudurpashchim
+  "Bajura":"Sudurpashchim","Bajhang":"Sudurpashchim","Darchula":"Sudurpashchim",
+  "Baitadi":"Sudurpashchim","Dadeldhura":"Sudurpashchim","Doti":"Sudurpashchim",
+  "Achham":"Sudurpashchim","Kailali":"Sudurpashchim","Kanchanpur":"Sudurpashchim"
+};
+
+// Colors by number of partners (choropleth)
+function getColor(count) {
+  if (count === 0) return "#e9ecef";
+  if (count === 1) return "#bee3f8";
+  if (count <= 3) return "#63b3ed";
+  if (count <= 5) return "#2b6cb0";
+  if (count <= 8) return "#1a365d";
+  return "#0d1f3c";
+}
+
+let map, geojsonLayer, currentFilter = "all";
+let selectedLayer = null;
+
+// ── Initialize map ────────────────────────────────────────
+function initMap() {
+  map = L.map("map", {
+    center: [28.3, 83.8],
+    zoom: 7,
+    minZoom: 6,
+    maxZoom: 11,
+    zoomControl: true
+  });
+
+  // Tile layer — OpenStreetMap
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
+    maxZoom: 18
+  }).addTo(map);
+
+  // Load GeoJSON
+  loadGeoJSON();
+  buildOrgFilter();
+}
+
+// ── Load Nepal district boundaries ───────────────────────
+function loadGeoJSON() {
+  fetch("data/nepal_districts.geojson")
+    .then(r => {
+      if (!r.ok) throw new Error("GeoJSON not found");
+      return r.json();
+    })
+    .then(data => {
+      geojsonLayer = L.geoJSON(data, {
+        style: featureStyle,
+        onEachFeature: onEachFeature
+      }).addTo(map);
+
+      map.fitBounds(geojsonLayer.getBounds(), { padding: [10, 10] });
+    })
+    .catch(err => {
+      console.error("GeoJSON load error:", err);
+      document.getElementById("sidebar-content").innerHTML =
+        `<div class="empty-state"><div class="icon">⚠️</div>
+         <p><strong>GeoJSON not found.</strong><br>Place <code>nepal_districts.geojson</code> inside the <code>data/</code> folder.<br>
+         See README for download instructions.</p></div>`;
+    });
+}
+
+// ── Style a district feature ──────────────────────────────
+function featureStyle(feature) {
+  const name = feature.properties.DISTRICT || feature.properties.district ||
+               feature.properties.NAME_3 || feature.properties.name || "";
+  const partners = getPartnersForDistrict(name);
+  const count = (currentFilter === "all")
+    ? partners.length
+    : partners.includes(currentFilter) ? 1 : 0;
+
+  const highlighted = count > 0 || currentFilter === "all";
+
+  return {
+    fillColor: (currentFilter === "all") ? getColor(partners.length)
+             : partners.includes(currentFilter) ? "#e53e3e" : "#e9ecef",
+    weight: 1.2,
+    opacity: 1,
+    color: "#fff",
+    fillOpacity: highlighted ? 0.82 : 0.35
+  };
+}
+
+// ── Attach events to each district ───────────────────────
+function onEachFeature(feature, layer) {
+  const rawName = feature.properties.DISTRICT || feature.properties.district ||
+                  feature.properties.NAME_3 || feature.properties.name || "Unknown";
+  const name = normalizeDistrictName(rawName);
+
+  layer.on({
+    mouseover: e => highlightFeature(e, name),
+    mouseout:  e => resetHighlight(e),
+    click:     e => selectDistrict(e, name, layer)
+  });
+}
+
+function highlightFeature(e, name) {
+  const layer = e.target;
+  if (layer !== selectedLayer) {
+    layer.setStyle({ weight: 2.5, color: "#ff9900", fillOpacity: 0.9 });
+    layer.bringToFront();
+  }
+}
+
+function resetHighlight(e) {
+  const layer = e.target;
+  if (layer !== selectedLayer) {
+    geojsonLayer.resetStyle(layer);
+  }
+}
+
+function selectDistrict(e, name, layer) {
+  // Deselect previous
+  if (selectedLayer && selectedLayer !== layer) {
+    geojsonLayer.resetStyle(selectedLayer);
+  }
+  selectedLayer = layer;
+  layer.setStyle({ weight: 3, color: "#ff9900", fillOpacity: 0.9 });
+  layer.bringToFront();
+
+  showDistrictInfo(name);
+  L.DomEvent.stopPropagation(e);
+}
+
+// ── Show district info in sidebar ────────────────────────
+function showDistrictInfo(districtName) {
+  const partners = getPartnersForDistrict(districtName);
+  const province = DISTRICT_PROVINCE[districtName] || "Nepal";
+
+  let html = `
+    <div id="district-name">${districtName}</div>
+    <div id="district-province">${province} Province</div>`;
+
+  if (partners.length === 0) {
+    html += `<div class="section-label">Partner Organisations</div>
+             <div class="no-partners">No partners registered in this district.</div>`;
+  } else {
+    html += `<div class="section-label">Partner Organisations (${partners.length})</div>`;
+    partners.forEach(org => {
+      const themes = (THEMATIC_AREAS && THEMATIC_AREAS[org]) || [];
+      html += `<div class="partner-card">
+        <div class="partner-name">${org}</div>
+        <div class="section-label" style="margin-top:6px;margin-bottom:4px;">Thematic Areas</div>`;
+      if (themes.length > 0) {
+        html += `<div class="thematic-tags">`;
+        themes.forEach(t => { html += `<span class="theme-tag">${t}</span>`; });
+        html += `</div>`;
+      } else {
+        html += `<div class="theme-placeholder">— To be added —</div>`;
+      }
+      html += `</div>`;
+    });
+  }
+
+  document.getElementById("sidebar-content").innerHTML = html;
+  document.querySelector("#sidebar-header h2").textContent = "District Details";
+}
+
+// ── Build org filter dropdown ─────────────────────────────
+function buildOrgFilter() {
+  const allOrgs = new Set();
+  Object.values(PARTNER_DATA).forEach(d => d.partners.forEach(o => allOrgs.add(o)));
+
+  const select = document.getElementById("org-filter");
+  Array.from(allOrgs).sort().forEach(org => {
+    const opt = document.createElement("option");
+    opt.value = org;
+    opt.textContent = org;
+    select.appendChild(opt);
+  });
+
+  select.addEventListener("change", e => {
+    currentFilter = e.target.value;
+    if (selectedLayer) {
+      geojsonLayer.resetStyle(selectedLayer);
+      selectedLayer = null;
+    }
+    document.getElementById("sidebar-content").innerHTML = defaultSidebarHTML();
+    document.querySelector("#sidebar-header h2").textContent = "Click a district";
+    geojsonLayer.eachLayer(l => geojsonLayer.resetStyle(l));
+  });
+}
+
+// ── Utility: get partners, normalizing GeoJSON name ───────
+function getPartnersForDistrict(name) {
+  const normalized = normalizeDistrictName(name);
+  return (PARTNER_DATA[normalized] && PARTNER_DATA[normalized].partners) || [];
+}
+
+// Normalize GeoJSON district names to match our data keys
+const NAME_OVERRIDES = {
+  "KAVREPALANCHOK": "Kavrepalanchok",
+  "MAKWANPUR": "Makawanpur",
+  "NAWALPARASI_E": "Nawalparasi East",
+  "NAWALPARASI E": "Nawalparasi East",
+  "NAWALPARASI EAST": "Nawalparasi East",
+  "RUKUM EAST": "Rukum East",
+  "RUKUM WEST": "Rukum West",
+  "RUKUM_EAST": "Rukum East",
+  "RUKUM_WEST": "Rukum West",
+};
+
+function normalizeDistrictName(raw) {
+  const upper = raw.toUpperCase().trim();
+  if (NAME_OVERRIDES[upper]) return NAME_OVERRIDES[upper];
+  // Title-case the raw string
+  return raw.trim().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function defaultSidebarHTML() {
+  return `<div class="empty-state">
+    <div class="icon">🗺️</div>
+    <p>Click on any district to see which partner organisations are working there.</p>
+  </div>`;
+}
+
+// ── Reset map selection when clicking blank area ──────────
+document.addEventListener("DOMContentLoaded", () => {
+  initMap();
+
+  // Stats
+  const totalDistricts = Object.keys(PARTNER_DATA).length;
+  const totalOrgs = new Set(Object.values(PARTNER_DATA).flatMap(d => d.partners)).size;
+  document.getElementById("stat-districts").textContent = totalDistricts;
+  document.getElementById("stat-orgs").textContent = totalOrgs;
+});
