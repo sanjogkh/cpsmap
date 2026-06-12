@@ -62,7 +62,8 @@ const PARTNER_DATA = {
   "Rolpa":            { partners: ["AF"] },
   "Baglung":          { partners: ["NNDCV"] },
   "Gorkha":           { partners: ["NNDCV"] },
-  "Arghakhanchi":     { partners: ["NA"] }
+  "Arghakhanchi":     { partners: ["NA"] },
+  "Nawalparasi West": { partners: [] }   // No partners yet — add when ready
 };
 
 // Thematic areas per organization — fill these in when ready
