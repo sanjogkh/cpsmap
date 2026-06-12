@@ -1,3 +1,10 @@
+/**
+ * Nepal Partner Organisation Map
+ * Author: Sanjog KH (github.com/sanjogkh)
+ * Repository: https://github.com/sanjogkh/cpsmap
+ * Created: June 2025
+ * License: MIT — attribution required
+ */
 // ─────────────────────────────────────────────────────────
 //  Nepal Partner Map — main.js
 //  Requires: Leaflet 1.9+, partners.js (data/partners.js)
