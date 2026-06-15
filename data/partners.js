@@ -358,8 +358,7 @@ const PARTNER_DATA = {
       { org: "WHR", themes: ["G", "W"] },
       { org: "NPI", themes: ["TJ"] },
       { org: "NNDCV", themes: ["PE", "TJ"] },
-      { org: "NA", themes: ["MH"] },
-      { org: "MAHURI Home", themes: ["DM", "HR"]}
+      { org: "NA", themes: ["MH"] }
     ]
   },
   "Dang": {
@@ -444,16 +443,52 @@ const PARTNER_DATA = {
   },
   "Nawalparasi West": { partners: [] },
 };
+
+// ─────────────────────────────────────────────────────────
+// Organization Registry — full names, acronyms, and consortium membership
+// Every partner org (mapped or not yet mapped to a district) is listed here.
+// "consortiums" is an array because some orgs belong to multiple consortia
+// (e.g. Advocacy Forum Nepal works under both KURVE Wustrow and PBI).
+//
+// Add new organizations here first; once they're assigned to districts in
+// PARTNER_DATA above, they'll automatically appear on the map.
+// ─────────────────────────────────────────────────────────
+const ORG_REGISTRY = {
+  // ── GIZ-CPS partners ──
+  "TSK":             { full: "The Story Kitchen", consortiums: ["GIZ-CPS"] },
+  "Pro Public":      { full: "Pro Public", consortiums: ["GIZ-CPS"] },
+  "Mandala Theatre": { full: "Mandala Theatre", consortiums: ["GIZ-CPS"] },
+  "HURF":            { full: "Human Rights Forum", consortiums: ["GIZ-CPS"] },
+  "APEC":            { full: "All People Development Center (SAMAGRA)", consortiums: ["GIZ-CPS"] },
+  "CVC Bardiya":     { full: "Conflict Victims Committee (CVC) - Bardiya", consortiums: ["GIZ-CPS"] },
+  "NNDCV":           { full: "National Network of Disabled Conflict Victims", consortiums: ["GIZ-CPS"] },
+  "AMARC-AP":        { full: "AMARC Asia-Pacific", consortiums: ["GIZ-CPS"] },
+
+  // ── KURVE Wustrow partners ──
+  "WHR":             { full: "Women for Human Rights", consortiums: ["KURVE Wustrow"] },
+  "CDWN":            { full: "Center for Dalit Women Nepal", consortiums: ["KURVE Wustrow"] },
+  "NA":              { full: "Nagarik Aawaz", consortiums: ["KURVE Wustrow"] },
+  "AF":              { full: "Advocacy Forum Nepal", consortiums: ["KURVE Wustrow", "PBI"] },
+  "BGTBK":           { full: "Nepal Bikalpa Gyan Tatha Bikas Kendra", consortiums: ["KURVE Wustrow"] },
+  "SNP":             { full: "Support Nepal", consortiums: ["KURVE Wustrow"] },
+  "NTTP-I":          { full: "Nepal Transition to Peace Institute", consortiums: ["KURVE Wustrow"] }, // not yet active in any district
+  "NPI":             { full: "Nepal Peacebuilding Initiative", consortiums: ["KURVE Wustrow"] },
+
+  // ── PBI (Peace Brigades International) partners ──
+  "MAHURI Home":     { full: "Madesh Human Rights Home", consortiums: ["PBI"] },
+  "COCAP":           { full: "Collective Campaign For Peace", consortiums: ["PBI"] },
+};
+
 // Optional: full names for theme codes (shown as tooltip on hover, if filled in)
 const THEME_LEGEND = {
-  "HR": "Human Rights",
-"W": "Women’s Empowerment",
-"DP": "Digital Peacebuilding",
-"DM": "Dialogue / Mediation",
-"G": "Governance",
-"Y": "Youth Work",
-"PE": "Peace Education",
-"TJ": "Transitional Justice",
-"CSM": "Conflict-sensitive Media & Journalism",
-"MH": "Mental Health & Psycho-Social Support",
+  // "HR": "Human Rights",
+  // "W": "Water & Sanitation",
+  // "DP": "Disaster Preparedness",
+  // "DM": "Disaster Management",
+  // "G": "Governance",
+  // "Y": "Youth",
+  // "PE": "Peacebuilding & Empowerment",
+  // "TJ": "Transitional Justice",
+  // "CSM": "Civil Society Mobilization",
+  // "MH": "Mental Health",
 };
