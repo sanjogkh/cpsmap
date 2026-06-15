@@ -358,7 +358,8 @@ const PARTNER_DATA = {
       { org: "WHR", themes: ["G", "W"] },
       { org: "NPI", themes: ["TJ"] },
       { org: "NNDCV", themes: ["PE", "TJ"] },
-      { org: "NA", themes: ["MH"] }
+      { org: "NA", themes: ["MH"] },
+      { org: "MAHURI Home", themes: ["DM", "HR"]}
     ]
   },
   "Dang": {
