@@ -183,9 +183,22 @@ function showDistrictInfo(districtName) {
     html += `<div class="section-label">Partner Organisations (${partners.length})</div>`;
     partners.forEach(p => {
       const themes = p.themes || [];
+      const orgInfo = ORG_REGISTRY[p.org];
+      const displayName = orgInfo ? `${orgInfo.full} (${p.org})` : p.org;
+      const consortiums = orgInfo ? orgInfo.consortiums : [];
+
       html += `<div class="partner-card">
-        <div class="partner-name">${p.org}</div>
-        <div class="section-label" style="margin-top:6px;margin-bottom:4px;">Thematic Areas</div>`;
+        <div class="partner-name">${displayName}</div>`;
+
+      if (consortiums.length > 0) {
+        html += `<div class="consortium-tags">`;
+        consortiums.forEach(c => {
+          html += `<span class="consortium-tag consortium-${slugify(c)}">${c}</span>`;
+        });
+        html += `</div>`;
+      }
+
+      html += `<div class="section-label" style="margin-top:6px;margin-bottom:4px;">Thematic Areas</div>`;
       if (themes.length > 0) {
         html += `<div class="thematic-tags">`;
         themes.forEach(t => {
@@ -211,12 +224,19 @@ function buildOrgFilter() {
   Object.values(PARTNER_DATA).forEach(d => d.partners.forEach(p => allOrgs.add(p.org)));
 
   const select = document.getElementById("org-filter");
-  Array.from(allOrgs).sort().forEach(org => {
-    const opt = document.createElement("option");
-    opt.value = org;
-    opt.textContent = org;
-    select.appendChild(opt);
-  });
+  Array.from(allOrgs)
+    .sort((a, b) => {
+      const nameA = (ORG_REGISTRY[a] && ORG_REGISTRY[a].full) || a;
+      const nameB = (ORG_REGISTRY[b] && ORG_REGISTRY[b].full) || b;
+      return nameA.localeCompare(nameB);
+    })
+    .forEach(org => {
+      const opt = document.createElement("option");
+      opt.value = org;
+      const fullName = (ORG_REGISTRY[org] && ORG_REGISTRY[org].full) || org;
+      opt.textContent = `${fullName} (${org})`;
+      select.appendChild(opt);
+    });
 
   select.addEventListener("change", e => {
     currentFilter = e.target.value;
@@ -325,6 +345,11 @@ function normalizeDistrictName(raw) {
   return raw.trim().replace(/\b\w/g, c => c.toUpperCase());
 }
 
+// ── Utility: turn "GIZ-CPS" / "KURVE Wustrow" / "PBI" into CSS-safe class names
+function slugify(str) {
+  return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
 // ── Nepal mask: dims everything outside Nepal ────────────
 function addNepalMask(geojsonData) {
   // Big bounding rectangle covering the whole world
@@ -430,18 +455,8 @@ document.addEventListener("DOMContentLoaded", () => {
   initMap();
 
   // Stats
-const totalDistricts = Object.keys(PARTNER_DATA).length;
-const totalOrgs = new Set(
-  Object.values(PARTNER_DATA)
-    .flatMap(d => d.partners)
-    .map(p => p.org)
-    .filter(org => org && org.trim() !== "")
-).size;
-document.getElementById("stat-districts").textContent = totalDistricts;
-document.getElementById("stat-orgs").textContent = totalOrgs;
-  // Stats which gave cumulative to 194 partner organzation which was wrong
- // const totalDistricts = Object.keys(PARTNER_DATA).length;
-  // const totalOrgs = new Set(Object.values(PARTNER_DATA).flatMap(d => d.partners)).size;
-  // document.getElementById("stat-districts").textContent = totalDistricts;
-  // document.getElementById("stat-orgs").textContent = totalOrgs;
+  const totalDistricts = Object.keys(PARTNER_DATA).length;
+  const totalOrgs = new Set(Object.values(PARTNER_DATA).flatMap(d => d.partners)).size;
+  document.getElementById("stat-districts").textContent = totalDistricts;
+  document.getElementById("stat-orgs").textContent = totalOrgs;
 });
