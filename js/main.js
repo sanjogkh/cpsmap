@@ -180,6 +180,7 @@ function selectDistrict(e, name, layer) {
   layer.bringToFront();
 
   showDistrictInfo(name);
+  showMapSummaryForDistrict(name);
   L.DomEvent.stopPropagation(e);
 }
 
@@ -234,6 +235,118 @@ function showDistrictInfo(districtName) {
   document.querySelector("#sidebar-header h2").textContent = "District Details";
 }
 
+// ── Floating map summary panel ────────────────────────────
+function showMapSummaryPanel(html) {
+  const panel = document.getElementById("map-summary-panel");
+  document.getElementById("summary-content").innerHTML = html;
+  panel.classList.add("visible");
+}
+
+function hideMapSummaryPanel() {
+  document.getElementById("map-summary-panel").classList.remove("visible");
+}
+
+// Build a theme-frequency breakdown table (sorted by count, descending)
+function themeBreakdownHTML(themeCounts) {
+  const entries = Object.entries(themeCounts).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) {
+    return `<div class="theme-placeholder">No thematic data yet</div>`;
+  }
+  let html = `<div class="summary-themes-label">Theme Breakdown</div>`;
+  entries.forEach(([code, count]) => {
+    const fullName = (THEME_LEGEND && THEME_LEGEND[code]) || code;
+    html += `<div class="summary-theme-row">
+      <span class="theme-name" title="${fullName}">
+        <span class="theme-tag">${code}</span> ${fullName}
+      </span>
+      <span class="summary-theme-count">${count}</span>
+    </div>`;
+  });
+  return html;
+}
+
+// Summary panel for a single district click
+function showMapSummaryForDistrict(districtName) {
+  const partners = getPartnersForDistrict(districtName);
+  const province = DISTRICT_PROVINCE[districtName] || "Nepal";
+
+  const themeCounts = {};
+  partners.forEach(p => (p.themes || []).forEach(t => {
+    themeCounts[t] = (themeCounts[t] || 0) + 1;
+  }));
+
+  let html = `
+    <div class="summary-title">${districtName}</div>
+    <div class="summary-subtitle">${province} Province</div>
+    <div class="summary-stat">
+      <span class="stat-label">Partners</span>
+      <span class="stat-value">${partners.length}</span>
+    </div>
+    ${themeBreakdownHTML(themeCounts)}
+  `;
+
+  showMapSummaryPanel(html);
+}
+
+// Summary panel for an organisation or consortium filter selection
+function showMapSummaryForFilter(filterValue) {
+  if (filterValue === "all") {
+    hideMapSummaryPanel();
+    return;
+  }
+
+  let title, subtitle;
+  let matchedDistricts = 0;
+  const themeCounts = {};
+
+  if (filterValue.startsWith("consortium:")) {
+    const consortiumName = filterValue.slice("consortium:".length);
+    title = consortiumName;
+    subtitle = "CPS Consortium";
+
+    Object.values(PARTNER_DATA).forEach(d => {
+      const matchingPartners = d.partners.filter(p => {
+        const info = ORG_REGISTRY[p.org];
+        return info && info.consortiums.includes(consortiumName);
+      });
+      if (matchingPartners.length > 0) {
+        matchedDistricts++;
+        matchingPartners.forEach(p => (p.themes || []).forEach(t => {
+          themeCounts[t] = (themeCounts[t] || 0) + 1;
+        }));
+      }
+    });
+  } else {
+    const orgInfo = ORG_REGISTRY[filterValue];
+    title = orgInfo ? `${orgInfo.full} (${filterValue})` : filterValue;
+    subtitle = orgInfo && orgInfo.consortiums.length > 0
+      ? orgInfo.consortiums.join(" · ")
+      : "Partner Organisation";
+
+    Object.values(PARTNER_DATA).forEach(d => {
+      const match = d.partners.find(p => p.org === filterValue);
+      if (match) {
+        matchedDistricts++;
+        (match.themes || []).forEach(t => {
+          themeCounts[t] = (themeCounts[t] || 0) + 1;
+        });
+      }
+    });
+  }
+
+  let html = `
+    <div class="summary-title">${title}</div>
+    <div class="summary-subtitle">${subtitle}</div>
+    <div class="summary-stat">
+      <span class="stat-label">Districts Covered</span>
+      <span class="stat-value">${matchedDistricts}</span>
+    </div>
+    ${themeBreakdownHTML(themeCounts)}
+  `;
+
+  showMapSummaryPanel(html);
+}
+
 // ── Build org filter dropdown ─────────────────────────────
 function buildOrgFilter() {
   const allOrgs = new Set();
@@ -280,6 +393,7 @@ function buildOrgFilter() {
     document.getElementById("sidebar-content").innerHTML = defaultSidebarHTML();
     document.querySelector("#sidebar-header h2").textContent = "Click a district";
     geojsonLayer.eachLayer(l => geojsonLayer.resetStyle(l));
+    showMapSummaryForFilter(currentFilter);
   });
 }
 
@@ -492,4 +606,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const totalOrgs = new Set(Object.values(PARTNER_DATA).flatMap(d => d.partners)).size;
   document.getElementById("stat-districts").textContent = totalDistricts;
   document.getElementById("stat-orgs").textContent = totalOrgs;
+
+  // Close button for floating summary panel
+  document.getElementById("summary-close").addEventListener("click", () => {
+    hideMapSummaryPanel();
+  });
 });
