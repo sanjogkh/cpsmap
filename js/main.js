@@ -111,19 +111,35 @@ function featureStyle(feature) {
   const name = feature.properties.DISTRICT || feature.properties.district ||
                feature.properties.NAME_3 || feature.properties.name || "";
   const partners = getPartnersForDistrict(name);
-  const hasFilterOrg = partners.some(p => p.org === currentFilter);
-  const count = (currentFilter === "all") ? partners.length : (hasFilterOrg ? 1 : 0);
+  const matches = districtMatchesFilter(partners);
+  const count = (currentFilter === "all") ? partners.length : (matches ? 1 : 0);
 
   const highlighted = count > 0 || currentFilter === "all";
 
   return {
     fillColor: (currentFilter === "all") ? getColor(partners.length)
-             : hasFilterOrg ? "#e53e3e" : "#e9ecef",
+             : matches ? "#e53e3e" : "#e9ecef",
     weight: 1.2,
     opacity: 1,
     color: "#fff",
     fillOpacity: highlighted ? 0.82 : 0.35
   };
+}
+
+// Returns true if the district's partner list matches the currentFilter
+// (either a specific org acronym, or a "consortium:NAME" filter)
+function districtMatchesFilter(partners) {
+  if (currentFilter === "all") return false;
+
+  if (currentFilter.startsWith("consortium:")) {
+    const consortiumName = currentFilter.slice("consortium:".length);
+    return partners.some(p => {
+      const info = ORG_REGISTRY[p.org];
+      return info && info.consortiums.includes(consortiumName);
+    });
+  }
+
+  return partners.some(p => p.org === currentFilter);
 }
 
 // ── Attach events to each district ───────────────────────
@@ -224,6 +240,22 @@ function buildOrgFilter() {
   Object.values(PARTNER_DATA).forEach(d => d.partners.forEach(p => allOrgs.add(p.org)));
 
   const select = document.getElementById("org-filter");
+
+  // ── Consortium group ──
+  const consortiums = ["GIZ-CPS", "KURVE Wustrow", "PBI"];
+  const consortiumGroup = document.createElement("optgroup");
+  consortiumGroup.label = "CPS Consortiums";
+  consortiums.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = `consortium:${c}`;
+    opt.textContent = c;
+    consortiumGroup.appendChild(opt);
+  });
+  select.appendChild(consortiumGroup);
+
+  // ── Individual organizations group ──
+  const orgGroup = document.createElement("optgroup");
+  orgGroup.label = "Individual Organisations";
   Array.from(allOrgs)
     .sort((a, b) => {
       const nameA = (ORG_REGISTRY[a] && ORG_REGISTRY[a].full) || a;
@@ -235,8 +267,9 @@ function buildOrgFilter() {
       opt.value = org;
       const fullName = (ORG_REGISTRY[org] && ORG_REGISTRY[org].full) || org;
       opt.textContent = `${fullName} (${org})`;
-      select.appendChild(opt);
+      orgGroup.appendChild(opt);
     });
+  select.appendChild(orgGroup);
 
   select.addEventListener("change", e => {
     currentFilter = e.target.value;
