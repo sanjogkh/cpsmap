@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CPS Nepal Partner Map</title>
+  <title>Nepal Partner Map</title>
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -16,8 +16,8 @@
   <!-- ── Header ── -->
   <div id="header">
     <div>
-      <h1>CPS Nepal Partner Organisation Map</h1>
-      <div class="subtitle">Interactive district-level partner coverage of CPS Nepal</div>
+      <h1>🇳🇵 Nepal Partner Organisation Map</h1>
+      <div class="subtitle">Interactive district-level partner coverage</div>
     </div>
     <div id="stats-bar">
       <div class="stat-item">
@@ -45,7 +45,7 @@
 
       <!-- Filter -->
       <div id="filter-bar">
-        <label for="org-filter">Filter by Organisation</label>
+        <label for="org-filter">Filter by Organisation / Consortium</label>
         <select id="org-filter">
           <option value="all">— Show all —</option>
         </select>
@@ -89,7 +89,7 @@
           </div>
           <div class="legend-item" id="filter-legend" style="display:none">
             <div class="legend-color" style="background:#e53e3e"></div>
-            <span>Selected organisation active</span>
+            <span>Selected organisation / consortium active</span>
           </div>
         </div>
       </div>
@@ -112,6 +112,6 @@
       fl.style.display = this.value === "all" ? "none" : "flex";
     });
   </script>
-<a href="https://github.com/sanjogkh">S.Khanal</a>
+
 </body>
 </html>
