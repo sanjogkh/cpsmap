@@ -445,14 +445,14 @@ const PARTNER_DATA = {
 };
 // Optional: full names for theme codes (shown as tooltip on hover, if filled in)
 const THEME_LEGEND = {
-  // "HR": "Human Rights",
-  // "W": "Water & Sanitation",
-  // "DP": "Disaster Preparedness",
-  // "DM": "Disaster Management",
-  // "G": "Governance",
-  // "Y": "Youth",
-  // "PE": "Peacebuilding & Empowerment",
-  // "TJ": "Transitional Justice",
-  // "CSM": "Civil Society Mobilization",
-  // "MH": "Mental Health",
+  "HR": "Human Rights",
+"W": "Women’s Empowerment",
+"DP": "Digital Peacebuilding",
+"DM": "Dialogue / Mediation",
+"G": "Governance",
+"Y": "Youth Work",
+"PE": "Peace Education",
+"TJ": "Transitional Justice",
+"CSM": "Conflict-sensitive Media & Journalism",
+"MH": "Mental Health & Psycho-Social Support",
 };
