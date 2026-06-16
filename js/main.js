@@ -602,10 +602,15 @@ document.addEventListener("DOMContentLoaded", () => {
   initMap();
 
   // Stats
-  const totalDistricts = Object.keys(PARTNER_DATA).length;
-  const totalOrgs = new Set(Object.values(PARTNER_DATA).flatMap(d => d.partners)).size;
-  document.getElementById("stat-districts").textContent = totalDistricts;
-  document.getElementById("stat-orgs").textContent = totalOrgs;
+const totalDistricts = Object.keys(PARTNER_DATA).length;
+const totalOrgs = new Set(
+  Object.values(PARTNER_DATA)
+    .flatMap(d => d.partners)
+    .map(p => p.org)
+    .filter(org => org && org.trim() !== "")
+).size;
+document.getElementById("stat-districts").textContent = totalDistricts;
+document.getElementById("stat-orgs").textContent = totalOrgs;
 
   // Close button for floating summary panel
   document.getElementById("summary-close").addEventListener("click", () => {
