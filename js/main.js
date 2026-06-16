@@ -293,6 +293,7 @@ function showMapSummaryForFilter(filterValue) {
   let title, subtitle;
   let matchedDistricts = 0;
   const themeCounts = {};
+  const consortiumPartners = new Set(); // only populated for consortium filters
 
   if (filterValue.startsWith("consortium:")) {
     const consortiumName = filterValue.slice("consortium:".length);
@@ -303,9 +304,12 @@ function showMapSummaryForFilter(filterValue) {
       const matchingPartners = d.partners.filter(p => p.consortium === consortiumName);
       if (matchingPartners.length > 0) {
         matchedDistricts++;
-        matchingPartners.forEach(p => (p.themes || []).forEach(t => {
-          themeCounts[t] = (themeCounts[t] || 0) + 1;
-        }));
+        matchingPartners.forEach(p => {
+          consortiumPartners.add(p.org);
+          (p.themes || []).forEach(t => {
+            themeCounts[t] = (themeCounts[t] || 0) + 1;
+          });
+        });
       }
     });
   } else {
@@ -333,6 +337,26 @@ function showMapSummaryForFilter(filterValue) {
       : "Partner Organisation";
   }
 
+  // Partner stat + chip list — only shown for consortium-level filters
+  let partnersSectionHTML = "";
+  if (filterValue.startsWith("consortium:")) {
+    const sortedPartners = Array.from(consortiumPartners).sort();
+    let chipsHTML = `<div class="summary-partner-chips">`;
+    sortedPartners.forEach(acr => {
+      const fullName = (ORG_REGISTRY[acr] && ORG_REGISTRY[acr].full) || acr;
+      chipsHTML += `<span class="summary-partner-chip" title="${fullName}">${acr}</span>`;
+    });
+    chipsHTML += `</div>`;
+
+    partnersSectionHTML = `
+      <div class="summary-stat">
+        <span class="stat-label">Number of Partners</span>
+        <span class="stat-value">${sortedPartners.length}</span>
+      </div>
+      ${chipsHTML}
+    `;
+  }
+
   let html = `
     <div class="summary-title">${title}</div>
     <div class="summary-subtitle">${subtitle}</div>
@@ -340,6 +364,7 @@ function showMapSummaryForFilter(filterValue) {
       <span class="stat-label">Districts Covered</span>
       <span class="stat-value">${matchedDistricts}</span>
     </div>
+    ${partnersSectionHTML}
     ${themeBreakdownHTML(themeCounts)}
   `;
 
