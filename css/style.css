@@ -119,6 +119,30 @@ body {
   letter-spacing: 0.05em;
 }
 
+#map-summary-panel .summary-partner-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+#map-summary-panel .summary-partner-chip {
+  background: #edf2f7;
+  color: #2d3748;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  cursor: default;
+  border: 1px solid #e2e8f0;
+}
+
+#map-summary-panel .summary-partner-chip:hover {
+  background: #2b6cb0;
+  color: white;
+  border-color: #2b6cb0;
+}
+
 #map-summary-panel .summary-themes-label {
   font-size: 0.7rem;
   font-weight: 700;
@@ -417,6 +441,20 @@ body {
 #sidebar-content::-webkit-scrollbar { width: 5px; }
 #sidebar-content::-webkit-scrollbar-track { background: #f1f5f9; }
 #sidebar-content::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 3px; }
+
+/* Watermark / attribution */
+#map-watermark {
+  position: absolute;
+  bottom: 6px;
+  left: 50px; /* clears Leaflet's zoom control */
+  z-index: 999;
+  font-size: 0.68rem;
+  color: rgba(45, 55, 72, 0.35);
+  font-family: 'Segoe UI', Arial, sans-serif;
+  pointer-events: none;
+  user-select: none;
+  letter-spacing: 0.02em;
+}
 
 /* Mobile */
 @media (max-width: 768px) {
