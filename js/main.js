@@ -133,10 +133,7 @@ function districtMatchesFilter(partners) {
 
   if (currentFilter.startsWith("consortium:")) {
     const consortiumName = currentFilter.slice("consortium:".length);
-    return partners.some(p => {
-      const info = ORG_REGISTRY[p.org];
-      return info && info.consortiums.includes(consortiumName);
-    });
+    return partners.some(p => p.consortium === consortiumName);
   }
 
   return partners.some(p => p.org === currentFilter);
@@ -202,17 +199,15 @@ function showDistrictInfo(districtName) {
       const themes = p.themes || [];
       const orgInfo = ORG_REGISTRY[p.org];
       const displayName = orgInfo ? `${orgInfo.full} (${p.org})` : p.org;
-      const consortiums = orgInfo ? orgInfo.consortiums : [];
+      const consortium = p.consortium || "";
 
       html += `<div class="partner-card">
         <div class="partner-name">${displayName}</div>`;
 
-      if (consortiums.length > 0) {
-        html += `<div class="consortium-tags">`;
-        consortiums.forEach(c => {
-          html += `<span class="consortium-tag consortium-${slugify(c)}">${c}</span>`;
-        });
-        html += `</div>`;
+      if (consortium) {
+        html += `<div class="consortium-tags">
+          <span class="consortium-tag consortium-${slugify(consortium)}">${consortium}</span>
+        </div>`;
       }
 
       html += `<div class="section-label" style="margin-top:6px;margin-bottom:4px;">Thematic Areas</div>`;
@@ -305,10 +300,7 @@ function showMapSummaryForFilter(filterValue) {
     subtitle = "CPS Consortium";
 
     Object.values(PARTNER_DATA).forEach(d => {
-      const matchingPartners = d.partners.filter(p => {
-        const info = ORG_REGISTRY[p.org];
-        return info && info.consortiums.includes(consortiumName);
-      });
+      const matchingPartners = d.partners.filter(p => p.consortium === consortiumName);
       if (matchingPartners.length > 0) {
         matchedDistricts++;
         matchingPartners.forEach(p => (p.themes || []).forEach(t => {
@@ -319,19 +311,26 @@ function showMapSummaryForFilter(filterValue) {
   } else {
     const orgInfo = ORG_REGISTRY[filterValue];
     title = orgInfo ? `${orgInfo.full} (${filterValue})` : filterValue;
-    subtitle = orgInfo && orgInfo.consortiums.length > 0
-      ? orgInfo.consortiums.join(" · ")
-      : "Partner Organisation";
+
+    // Collect the actual consortium(s) this org works under, based on its
+    // real district assignments (an org can belong to different consortiums
+    // in different districts).
+    const consortiumsFound = new Set();
 
     Object.values(PARTNER_DATA).forEach(d => {
       const match = d.partners.find(p => p.org === filterValue);
       if (match) {
         matchedDistricts++;
+        if (match.consortium) consortiumsFound.add(match.consortium);
         (match.themes || []).forEach(t => {
           themeCounts[t] = (themeCounts[t] || 0) + 1;
         });
       }
     });
+
+    subtitle = consortiumsFound.size > 0
+      ? Array.from(consortiumsFound).join(" · ")
+      : "Partner Organisation";
   }
 
   let html = `
@@ -602,15 +601,15 @@ document.addEventListener("DOMContentLoaded", () => {
   initMap();
 
   // Stats
-const totalDistricts = Object.keys(PARTNER_DATA).length;
-const totalOrgs = new Set(
-  Object.values(PARTNER_DATA)
-    .flatMap(d => d.partners)
-    .map(p => p.org)
-    .filter(org => org && org.trim() !== "")
-).size;
-document.getElementById("stat-districts").textContent = totalDistricts;
-document.getElementById("stat-orgs").textContent = totalOrgs;
+  const totalDistricts = Object.keys(PARTNER_DATA).length;
+  const totalOrgs = new Set(
+    Object.values(PARTNER_DATA)
+      .flatMap(d => d.partners)
+      .map(p => p.org)
+      .filter(org => org && org.trim() !== "")
+  ).size;
+  document.getElementById("stat-districts").textContent = totalDistricts;
+  document.getElementById("stat-orgs").textContent = totalOrgs;
 
   // Close button for floating summary panel
   document.getElementById("summary-close").addEventListener("click", () => {
